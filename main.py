@@ -1,13 +1,13 @@
 import pygame
 import random
-from animal import Preditor, Prey
+#from animal import Preditor, Prey
 pygame.font.init()
 
 WIDTH, HEIGHT = 800, 600
-WIN = pygame.display.set_mode((WIDTH, WIDTH))
+WIN = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption('Preditor-Prey Simulator')
 MAIN_FONT = pygame.font.SysFont('comicsans', 40)
-FPS = 10
+FPS = 1
 
 # Colours (R, G, B)
 BLACK = (0, 0, 0)
@@ -23,30 +23,82 @@ PURPLE = (255, 0, 255)
 CYAN = (0, 255, 255)
 
 
+class Island:
+    '''  '''
+
+    def __init__(self, win, width, height, prey_cnt, pred_cnt, rows):
+        self.win = win
+        self.width = width
+        self.height = height
+        self.rows = rows
+        self.gap_w = self.width // self.rows
+        self.gap_h = self.height // self.rows
+
+        # the below (self.grid) creates the "island" and sets each tile to 0
+        # these will be set to correspond to grass, water, etc... by the 
+        # create_landscape function
+        self.grid = [[0 for i in range(self.rows)] for j in range(self.rows)]
+        
+        self.prey_cnt = prey_cnt
+        self.pred_cnt = pred_cnt
+        self.tiles = []
+
+
+    def create_landscape(self):
+        ''' set the tile type (i.e. grass, water, etc...) '''
+        for i in self.grid:
+            for j in range(len(i)):
+                choice = random.randint(1, 15)
+                if choice == 4:
+                    t = 6  # rock
+                elif choice == 5 or choice == 6:
+                    t = 4  # water
+                elif choice == 15:
+                    t = 2  # sand
+                else:
+                    t = 1  # grass
+                i[j] = t
+
+
+    def make_grid(self):
+        self.create_landscape()
+
+        for i in range(self.rows):
+            self.tiles.append([])
+            for j in range(self.rows):
+                square = Square(i, j, self.gap_w, self.gap_h, self.grid[i][j])
+                self.tiles[i].append(square)
+
+
+    def draw_island(self):
+        # set the background colour of the window
+        self.win.fill(ORANGE)
+
+        for row in self.tiles:
+            for tile in row:
+                tile.draw(self.win)
+
+        for i in range(self.rows):
+            pygame.draw.line(self.win, GREY, (0, i * self.gap_h), (self.width, i * self.gap_h))
+        for j in range(self.rows):
+            pygame.draw.line(self.win, GREY, (j * self.gap_w, 0), (j * self.gap_w, self.height))
+        
+        pygame.display.update()
+
+
 class Square:
-    def __init__(self, row, col, width, total_rows, type):
+    '''  '''
+    def __init__(self, row, col, width, height, type):
         self.row = row
         self.col = col
         self.x = row * width
-        self.y = col * width
+        self.y = col * height
         self.width = width
-        self.total_rows = total_rows
+        self.height = height
         self.type = type
+        self.color = BLACK
 
-        if self.type == "rock":
-            self.color = GREY
-        if self.type == "water":
-            self.color = BLUE
-        if self.type == "grass":
-            self.color = GREEN
-        if self.type == "sand":
-            self.color = YELLOW
-        
-
-    def draw(self, win):
-        pygame.draw.rect(win, self.color, (self.x, self.y, self.width, self.width))
-
-
+    
     def get_pos(self):
         return self.row, self.col
 
@@ -58,62 +110,42 @@ class Square:
     def make_water(self):
         self.color = BLUE
 
-    
+
     def make_rock(self):
         self.color = GREY
 
-    
+
     def make_sand(self):
         self.color = YELLOW
 
 
-def draw(win, grid, rows, width):
-    win.fill(GREY)
+    def draw(self, win):
+        if self.type == 1:
+            self.make_grass()
+        if self.type == 2:
+            self.make_sand()
+        if self.type == 4:
+            self.make_water()
+        if self.type == 6:
+            self.make_rock()
 
-    for row in grid:
-        for square in row:
-            square.draw(win)
-
-    draw_grid(win, rows, width)
-    pygame.display.update()
-
-
-def make_grid(rows, width):
-    grid = []
-    gap = width // rows
-
-    for i in range(rows):
-        grid.append([])
-        for j in range(rows):
-            choice = random.randint(1, 15)
-            if choice == 4:
-                sq_type = "rock"
-            elif choice == 5 or choice == 6:
-                sq_type = "water"
-            elif choice == 15:
-                sq_type = "sand"
-            else:
-                sq_type = "grass"
-            square = Square(i, j, gap, rows, sq_type)
-            grid[i].append(square)
-
-    return grid
+        pygame.draw.rect(win, self.color, (self.x, self.y, self.width, self.height))
 
 
-def draw_grid(win, rows, width):
-    gap = width // rows
-    for i in range(rows):
-        pygame.draw.line(win, GREY, (0, i * gap), (width, i * gap))
-        for j in range(rows):
-            pygame.draw.line(win, GREY, (j * gap, 0), (j * gap, width))
+def populate_map(win, prey, pred, radius):
+    for i in range(0, prey):
+        center = (24, 18)
+        pygame.draw.circle(win, RED, center, 6, 0, True, True, True, False)
 
 
-def main(win, width):
-    ROWS = 50
-    grid = make_grid(ROWS, width)
+def main(win, width, height, start_prey, start_pred):
+    ROWS = 20
+    island = Island(win, width, height, start_prey, start_pred, ROWS)
+    island.make_grid()
+
     run = True
     while run:
-        draw(win, grid, ROWS, width)
+        island.draw_island()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
@@ -122,4 +154,4 @@ def main(win, width):
 
 
 if __name__ == '__main__':
-    main(WIN, WIDTH)
+    main(WIN, WIDTH, HEIGHT, 5, 2)
