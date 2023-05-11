@@ -1,13 +1,13 @@
 import pygame
 import random
 #from animal import Preditor, Prey
-pygame.font.init()
+pygame.font.init()  # initialise the font
 
-WIDTH, HEIGHT = 800, 600
-WIN = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption('Preditor-Prey Simulator')
-MAIN_FONT = pygame.font.SysFont('comicsans', 40)
-FPS = 1
+WIDTH, HEIGHT = 800, 600  # window size
+WIN = pygame.display.set_mode((WIDTH, HEIGHT))  # create the pygame window
+pygame.display.set_caption('Preditor-Prey Simulator')  # set the title
+MAIN_FONT = pygame.font.SysFont('comicsans', 40)  # set the font style and size
+FPS = 1  # set the frame per second limit
 
 # Colours (R, G, B)
 BLACK = (0, 0, 0)
@@ -24,7 +24,7 @@ CYAN = (0, 255, 255)
 
 
 class Island:
-    '''  '''
+    ''' island class used to create game area and set tile types '''
 
     def __init__(self, win, width, height, prey_cnt, pred_cnt, rows):
         self.win = win
@@ -87,7 +87,7 @@ class Island:
 
 
 class Square:
-    '''  '''
+    ''' square class to create tiles for the game area and hold the attributes '''
     def __init__(self, row, col, width, height, type):
         self.row = row
         self.col = col
@@ -132,13 +132,8 @@ class Square:
         pygame.draw.rect(win, self.color, (self.x, self.y, self.width, self.height))
 
 
-def populate_map(win, prey, pred, radius):
-    for i in range(0, prey):
-        center = (24, 18)
-        pygame.draw.circle(win, RED, center, 6, 0, True, True, True, False)
-
-
 def main(win, width, height, start_prey, start_pred):
+    ''' main is called to start the program '''
     ROWS = 20
     island = Island(win, width, height, start_prey, start_pred, ROWS)
     island.make_grid()
