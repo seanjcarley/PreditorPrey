@@ -1,6 +1,6 @@
 import pygame
 import random
-from animal import Animal
+from animal import Animal, Preditor, Prey
 
 pygame.font.init()  # initialise the font
 
@@ -27,21 +27,20 @@ CYAN = (0, 255, 255)
 class Island:
     ''' island class used to create game area and set tile types '''
 
-    def __init__(self, win, width, height, prey_cnt, pred_cnt, rows):
+    def __init__(self, win, width, height, rows):
         self.win = win
         self.width = width
         self.height = height
         self.rows = rows
         self.gap_w = self.width // self.rows
         self.gap_h = self.height // self.rows
+        self.pred_cnt = 0
+        self.prey_cnt = 0
 
         # the below (self.grid) creates the "island" and sets each tile to 0
         # these will be set to correspond to grass, water, etc... by the 
         # create_landscape function
         self.grid = [[0 for i in range(self.rows)] for j in range(self.rows)]
-        
-        self.prey_cnt = prey_cnt
-        self.pred_cnt = pred_cnt
         self.tiles = []
 
 
@@ -65,24 +64,16 @@ class Island:
         self.create_landscape()
 
         for i in range(self.rows):
-            self.tiles.append([])
             for j in range(self.rows):
                 square = Square(i, j, self.gap_w, self.gap_h, self.grid[i][j])
-                self.tiles[i].append(square)
-
-    
-    def make_animals(self, tile):
-        tile.draw(self.win)
-        pygame.display.update()
-        
+                self.tiles.append(square)
 
 
-    def draw_island(self):
+    def draw_island(self, animals):
         # set the background colour of the window
         self.win.fill(ORANGE)
 
-        for row in self.tiles:
-            for tile in row:
+        for tile in self.tiles:
                 tile.draw(self.win)
 
         for i in range(self.rows):
@@ -93,7 +84,33 @@ class Island:
             pygame.draw.line(self.win, GREY, 
                              (j * self.gap_w, 0), 
                              (j * self.gap_w, self.height))
-        
+            
+        for a in animals:
+            if a.type == 3:
+                for t in self.tiles:
+                    if t.x == a.x and t.y == a.y:
+                        if t.type > a.type:
+                            a.alive = False
+                            pygame.draw.ellipse(self.win, BLACK, 
+                                                (a.x, a.y, self.gap_w, 
+                                                    self.gap_h))
+                        else:
+                            pygame.draw.ellipse(self.win, PURPLE, 
+                                                (a.x, a.y, self.gap_w, 
+                                                    self.gap_h))
+            elif a.type == 5:
+                for t in self.tiles:
+                    if t.x == a.x and t.y == a.y:
+                        if t.type > a.type:
+                            a.alive = False
+                            pygame.draw.ellipse(self.win, WHITE, 
+                                                (a.x, a.y, self.gap_w, 
+                                                    self.gap_h))
+                        else:
+                            pygame.draw.ellipse(self.win, RED, 
+                                                (a.x, a.y, self.gap_w, 
+                                                    self.gap_h))
+            
         pygame.display.update()
 
 
@@ -131,33 +148,15 @@ class Square:
     def make_sand(self):
         self.color = YELLOW
 
-    
-    def make_animal(self):
-        self.color = CYAN
-
-
-    def make_prey(self):
-        self.color = PURPLE
-
-    
-    def make_pred(self):
-        self.color = RED
-
     def draw(self, win):
         if self.type == 1:
             self.make_grass()
-        if self.type == 2:
+        elif self.type == 2:
             self.make_sand()
-        if self.type == 3:
-            self.make_prey
-        if self.type == 4:
+        elif self.type == 4:
             self.make_water()
-        if self.type == 5:
-            self.make_pred
-        if self.type == 6:
+        elif self.type == 6:
             self.make_rock()
-        if self.type == 7:
-            self.make_animal()
 
         pygame.draw.rect(win, self.color, 
                          (self.x, self.y, self.width, self.height))
@@ -172,9 +171,9 @@ def get_pos(rows, gap_w, gap_h):
     return x, y
 
 
-def get_chk(animals, x, y):
-    for a in animals:
-        if x == a.x and y == a.y:
+def get_chk(lst, x, y):
+    for i in lst:
+        if i[0] == x and i[1] == y:
             chk = True
             break
         else:
@@ -185,44 +184,69 @@ def get_chk(animals, x, y):
 
 def main(win, width, height, start_prey, start_pred):
     ''' main is called to start the program '''
-    ROWS = 5
+    ROWS = 10
+    positions = []
+    PREY = []
+    PREDITORS = []
     ANIMALS = []
     chk = True
 
     # create the "island" where the simulator will run
-    island = Island(win, width, height, start_prey, start_pred, ROWS)
+    island = Island(win, width, height, ROWS)
     island.make_grid()
     
-    # Create the Animals that will live on the island and set 
-    # their start position
-    for i in range(start_pred):
-        if len(ANIMALS) == 0:
+    # create the animals that will live on the island
+    # 1. get the random positions for the animals to start
+    for i in range(start_prey + start_pred):
+        if i == 0:
             x, y = get_pos(ROWS, island.gap_w, island.gap_h)
-            ANIMALS.append(Animal(island, x, y, f'Animal_{i}'))
+            positions.append((x, y))
         else:
             while chk:
                 x, y = get_pos(ROWS, island.gap_w, island.gap_h)
-                chk = get_chk(ANIMALS, x, y)
-            
-            ANIMALS.append(Animal(island, x, y, f'Animal_{i}'))
-            chk = True
-                    
-    for a in ANIMALS:
-        print(f'{a.name} is at position {(a.x, a.y)}, and it\'s moved flag is set at {a.moved}')
-        x, y = a.x, a.y
-        for j in island.tiles:
-            for k in j:
-                if a.x == k.x and a.y == k.y:
-                    k.type = a.type
-                    island.make_animals(k)
+                chk = get_chk(positions, x, y)
 
+            positions.append((x, y))
+            chk = True
+
+    # 2. create the animal using the positions
+    if start_pred + start_prey == len(positions):
+        cnt_prey = 0
+        cnt_pred = 0
+        while len(positions) > 0:
+            if cnt_prey < start_prey:
+                num = random.randint(0, len(positions) - 1)
+                position_x = positions[num][0]
+                position_y = positions[num][1]
+                PREY.append(Prey(island, position_x, position_y, cnt_prey))
+                cnt_prey += 1
+                positions.pop(num)
+            else:
+                num = random.randint(0, len(positions) - 1)
+                position_x = positions[num][0]
+                position_y = positions[num][1]
+                PREDITORS.append(Preditor(island, position_x, position_y, cnt_pred))
+                cnt_pred += 1
+                positions.pop(num)
+
+            ANIMALS = PREY + PREDITORS
 
     run = True
     while run:
-        island.draw_island()
+        for i in ANIMALS:
+            i.reset_moved_flag()
+
+        island.draw_island(ANIMALS)
+
         for event in pygame.event.get():
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                for i in ANIMALS:
+                    i.move_animal()
+                
             if event.type == pygame.QUIT:
                 run = False
+
+        
 
     pygame.quit()
 
