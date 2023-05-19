@@ -1,14 +1,18 @@
 import pygame
 import random
-from animal import Animal, Preditor, Prey
+from animal import Preditor, Prey
 
 pygame.font.init()  # initialise the font
 
 WIDTH, HEIGHT = 800, 600  # window size
 WIN = pygame.display.set_mode((WIDTH, HEIGHT))  # create the pygame window
 pygame.display.set_caption('Preditor-Prey Simulator')  # set the title
-MAIN_FONT = pygame.font.SysFont('comicsans', 40)  # set the font style and size
-FPS = 1  # set the frame per second limit
+MAIN_FONT = pygame.font.SysFont('comicsans', 20)  # set the font style and size
+FPS = 2  # set the frame per second limit
+MAX_MOVES = 100
+MAX_ISLAND_AGE = 150
+STARTING_PREY = 10
+STARTING_PRED = 4
 
 # Colours (R, G, B)
 BLACK = (0, 0, 0)
@@ -36,12 +40,17 @@ class Island:
         self.gap_h = self.height // self.rows
         self.pred_cnt = 0
         self.prey_cnt = 0
-
+        self.max_moves = 300
         # the below (self.grid) creates the "island" and sets each tile to 0
         # these will be set to correspond to grass, water, etc... by the 
         # create_landscape function
         self.grid = [[0 for i in range(self.rows)] for j in range(self.rows)]
         self.tiles = []
+        self.prey = []  # keep track of prey that are still alive
+        self.pred = []  # keep track of preditors that are still alive
+        self.dead_prey = []  # keep track of prey that have died
+        self.dead_pred = []  # keep track of preditors that have died
+        self.island_age = 0
 
 
     def create_landscape(self):
@@ -69,9 +78,13 @@ class Island:
                 self.tiles.append(square)
 
 
-    def draw_island(self, animals):
+    def draw_island(self):
         # set the background colour of the window
         self.win.fill(ORANGE)
+
+        prey_txt = MAIN_FONT.render(f'Prey Population: {len(self.prey)}', 1, WHITE)
+        pred_txt = MAIN_FONT.render(f'Preditor Population: {len(self.pred)}', 1, WHITE)
+        move_txt = MAIN_FONT.render(f'Total Moves: {self.island_age}', 1 , WHITE)
 
         for tile in self.tiles:
                 tile.draw(self.win)
@@ -80,36 +93,35 @@ class Island:
             pygame.draw.line(self.win, GREY, 
                              (0, i * self.gap_h), 
                              (self.width, i * self.gap_h))
+        
         for j in range(self.rows):
             pygame.draw.line(self.win, GREY, 
                              (j * self.gap_w, 0), 
                              (j * self.gap_w, self.height))
             
-        for a in animals:
-            if a.type == 3:
-                for t in self.tiles:
-                    if t.x == a.x and t.y == a.y:
-                        if t.type > a.type:
-                            a.alive = False
-                            pygame.draw.ellipse(self.win, BLACK, 
-                                                (a.x, a.y, self.gap_w, 
-                                                    self.gap_h))
-                        else:
-                            pygame.draw.ellipse(self.win, PURPLE, 
-                                                (a.x, a.y, self.gap_w, 
-                                                    self.gap_h))
-            elif a.type == 5:
-                for t in self.tiles:
-                    if t.x == a.x and t.y == a.y:
-                        if t.type > a.type:
-                            a.alive = False
-                            pygame.draw.ellipse(self.win, WHITE, 
-                                                (a.x, a.y, self.gap_w, 
-                                                    self.gap_h))
-                        else:
-                            pygame.draw.ellipse(self.win, RED, 
-                                                (a.x, a.y, self.gap_w, 
-                                                    self.gap_h))
+        for prey in self.prey:
+            for t in self.tiles:
+                if t.x == prey.x and t.y == prey.y:
+                    if t.type > prey.type:
+                        prey.died()
+                    else:
+                        pygame.draw.ellipse(self.win, PURPLE, 
+                                            (prey.x, prey.y, self.gap_w, 
+                                                self.gap_h))
+        
+        for pred in self.pred:
+            for t in self.tiles:
+                if t.x == pred.x and t.y == pred.y:
+                    if t.type > pred.type:
+                        pred.died()
+                    else:
+                        pygame.draw.ellipse(self.win, RED, 
+                                            (pred.x, pred.y, self.gap_w, 
+                                                self.gap_h))
+                        
+        self.win.blit(prey_txt, (20, 20))
+        self.win.blit(pred_txt, (20, 20 + prey_txt.get_height()))
+        self.win.blit(move_txt, (self.width - move_txt.get_width() - 20, 20))
             
         pygame.display.update()
 
@@ -184,12 +196,11 @@ def get_chk(lst, x, y):
 
 def main(win, width, height, start_prey, start_pred):
     ''' main is called to start the program '''
-    ROWS = 10
+    ROWS = 25
     positions = []
-    PREY = []
-    PREDITORS = []
     ANIMALS = []
     chk = True
+    clock = pygame.time.Clock()
 
     # create the "island" where the simulator will run
     island = Island(win, width, height, ROWS)
@@ -218,38 +229,47 @@ def main(win, width, height, start_prey, start_pred):
                 num = random.randint(0, len(positions) - 1)
                 position_x = positions[num][0]
                 position_y = positions[num][1]
-                PREY.append(Prey(island, position_x, position_y, cnt_prey))
+                island.prey.append(Prey(island, position_x, position_y, cnt_prey))
                 cnt_prey += 1
                 positions.pop(num)
             else:
                 num = random.randint(0, len(positions) - 1)
                 position_x = positions[num][0]
                 position_y = positions[num][1]
-                PREDITORS.append(Preditor(island, position_x, position_y, cnt_pred))
+                island.pred.append(Preditor(island, position_x, position_y, cnt_pred))
                 cnt_pred += 1
                 positions.pop(num)
 
-            ANIMALS = PREY + PREDITORS
-
     run = True
     while run:
+        island.island_age += 1
+        ANIMALS = island.prey + island.pred
+        clock.tick(FPS)
         for i in ANIMALS:
             i.reset_moved_flag()
 
-        island.draw_island(ANIMALS)
+        island.draw_island()
 
         for event in pygame.event.get():
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                for i in ANIMALS:
-                    i.move_animal()
+            # can be used to progress the simulation by clicking the mouse
+            # if event.type == pygame.MOUSEBUTTONDOWN:
+            #     for a in ANIMALS:
+            #         if a.age < 10:
+            #             a.move_animal()
+            #         else:
+            #             a.died()
                 
             if event.type == pygame.QUIT:
                 run = False
 
-        
+        for a in ANIMALS:
+            if a.age < MAX_MOVES:
+                a.move_animal()
+            else:
+                a.died()
 
     pygame.quit()
 
 
 if __name__ == '__main__':
-    main(WIN, WIDTH, HEIGHT, 5, 2)
+    main(WIN, WIDTH, HEIGHT, STARTING_PREY, STARTING_PRED)
