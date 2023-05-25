@@ -9,8 +9,8 @@ WIN = pygame.display.set_mode((WIDTH, HEIGHT))  # create the pygame window
 pygame.display.set_caption('Preditor-Prey Simulator')  # set the title
 MAIN_FONT = pygame.font.SysFont('comicsans', 20)  # set the font style and size
 FPS = 2  # set the frame per second limit
-MAX_MOVES = 100
-MAX_ISLAND_AGE = 150
+# MAX_MOVES = 100
+# MAX_ISLAND_AGE = 150
 STARTING_PREY = 10
 STARTING_PRED = 4
 
@@ -40,7 +40,7 @@ class Island:
         self.gap_h = self.height // self.rows
         self.pred_cnt = 0
         self.prey_cnt = 0
-        self.max_moves = 300
+        self.max_moves = 50
         # the below (self.grid) creates the "island" and sets each tile to 0
         # these will be set to correspond to grass, water, etc... by the 
         # create_landscape function
@@ -125,6 +125,21 @@ class Island:
             
         pygame.display.update()
 
+
+    def draw_finish_stats(self):
+        prey_alive_txt = MAIN_FONT.render(f'Prey Population: {len(self.prey)}', 1, WHITE)
+        prey_dead_txt = MAIN_FONT.render(f'Prey Died: {len(self.dead_prey)}', 1, WHITE)
+        pred_alive_txt = MAIN_FONT.render(f'Preditors Population: {len(self.pred)}', 1, WHITE)
+        pred_dead_txt = MAIN_FONT.render(f'Preditors Died: {len(self.dead_pred)}', 1, WHITE)
+        
+        self.win.fill(BLACK)
+
+        self.win.blit(prey_alive_txt, (20, 20))
+        self.win.blit(prey_dead_txt, (20, 20 + prey_alive_txt.get_height()))
+        self.win.blit(pred_alive_txt, (20, 20 + (prey_alive_txt.get_height() * 2)))
+        self.win.blit(pred_dead_txt, (20, 20 + (prey_alive_txt.get_height() * 3)))
+
+        pygame.display.update()
 
 class Square:
     ''' square class to create tiles for the game area and hold 
@@ -242,31 +257,39 @@ def main(win, width, height, start_prey, start_pred):
 
     run = True
     while run:
-        island.island_age += 1
-        ANIMALS = island.prey + island.pred
-        clock.tick(FPS)
-        for i in ANIMALS:
-            i.reset_moved_flag()
+        if len(island.prey) > 0 and len(island.pred) > 0 \
+            and island.island_age < island.max_moves:
+            island.island_age += 1
+            ANIMALS = island.prey + island.pred
+            clock.tick(FPS)
+            for i in ANIMALS:
+                i.reset_moved_flag()
 
-        island.draw_island()
+            island.draw_island()
 
-        for event in pygame.event.get():
-            # can be used to progress the simulation by clicking the mouse
-            # if event.type == pygame.MOUSEBUTTONDOWN:
-            #     for a in ANIMALS:
-            #         if a.age < 10:
-            #             a.move_animal()
-            #         else:
-            #             a.died()
+            for event in pygame.event.get():
+                # can be used to progress the simulation by clicking the mouse
+                # if event.type == pygame.MOUSEBUTTONDOWN:
+                #     for a in ANIMALS:
+                #         if a.age < 10:
+                #             a.move_animal()
+                #         else:
+                #             a.died()
                 
-            if event.type == pygame.QUIT:
-                run = False
+                if event.type == pygame.QUIT:
+                    run = False
 
-        for a in ANIMALS:
-            if a.age < MAX_MOVES:
-                a.move_animal()
-            else:
-                a.died()
+            for a in ANIMALS:
+                if a.age < island.max_moves:
+                    a.move_animal()
+                else:
+                    a.died()
+        else:
+            island.draw_finish_stats()
+
+            for event in pygame.event.get():               
+                if event.type == pygame.QUIT:
+                    run = False
 
     pygame.quit()
 
