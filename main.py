@@ -12,7 +12,7 @@ FPS = 2  # set the frame per second limit
 # MAX_MOVES = 100
 # MAX_ISLAND_AGE = 150
 STARTING_PREY = 10
-STARTING_PRED = 4
+STARTING_PRED = 3
 
 # Colours (R, G, B)
 BLACK = (0, 0, 0)
@@ -40,7 +40,7 @@ class Island:
         self.gap_h = self.height // self.rows
         self.pred_cnt = 0
         self.prey_cnt = 0
-        self.max_moves = 50
+        self.max_moves = 150
         # the below (self.grid) creates the "island" and sets each tile to 0
         # these will be set to correspond to grass, water, etc... by the 
         # create_landscape function
@@ -154,6 +154,17 @@ class Square:
         self.height = height
         self.type = type
         self.color = BLACK
+        self.co_ords = [self.x, self.y]
+
+    
+    def __str__(self):
+        ''' return a name for the tile '''
+        return f'{self.x}, {self.y}'
+    
+
+    def __repr__(self):
+        ''' returns a printable representation of the specified object '''
+        return self.__str__()
 
     
     def get_pos(self):
