@@ -11,8 +11,8 @@ MAIN_FONT = pygame.font.SysFont('comicsans', 20)  # set the font style and size
 FPS = 2  # set the frame per second limit
 # MAX_MOVES = 100
 # MAX_ISLAND_AGE = 150
-STARTING_PREY = 10
-STARTING_PRED = 3
+STARTING_PREY = 20
+STARTING_PRED = 5
 
 # Colours (R, G, B)
 BLACK = (0, 0, 0)
@@ -108,6 +108,7 @@ class Island:
                         pygame.draw.ellipse(self.win, PURPLE, 
                                             (prey.x, prey.y, self.gap_w, 
                                                 self.gap_h))
+                        # t.occupied = True
         
         for pred in self.pred:
             for t in self.tiles:
@@ -115,7 +116,11 @@ class Island:
                     if t.type > pred.type:
                         pred.died()
                     else:
-                        pygame.draw.ellipse(self.win, RED, 
+                        if pred.starve_clock > 5:
+                            color = RED
+                        else:
+                            color = ORANGE
+                        pygame.draw.ellipse(self.win, color, 
                                             (pred.x, pred.y, self.gap_w, 
                                                 self.gap_h))
                         
@@ -127,6 +132,7 @@ class Island:
 
 
     def draw_finish_stats(self):
+        island_age_txt = MAIN_FONT.render(f'Island Age: {self.island_age}', 1, WHITE)
         prey_alive_txt = MAIN_FONT.render(f'Prey Population: {len(self.prey)}', 1, WHITE)
         prey_dead_txt = MAIN_FONT.render(f'Prey Died: {len(self.dead_prey)}', 1, WHITE)
         pred_alive_txt = MAIN_FONT.render(f'Preditors Population: {len(self.pred)}', 1, WHITE)
@@ -138,6 +144,7 @@ class Island:
         self.win.blit(prey_dead_txt, (20, 20 + prey_alive_txt.get_height()))
         self.win.blit(pred_alive_txt, (20, 20 + (prey_alive_txt.get_height() * 2)))
         self.win.blit(pred_dead_txt, (20, 20 + (prey_alive_txt.get_height() * 3)))
+        self.win.blit(island_age_txt, (20, 20 + (prey_alive_txt.get_height() * 4)))
 
         pygame.display.update()
 
@@ -155,6 +162,7 @@ class Square:
         self.type = type
         self.color = BLACK
         self.co_ords = [self.x, self.y]
+        self.occupied = False
 
     
     def __str__(self):
@@ -222,7 +230,7 @@ def get_chk(lst, x, y):
 
 def main(win, width, height, start_prey, start_pred):
     ''' main is called to start the program '''
-    ROWS = 25
+    ROWS = 20
     positions = []
     ANIMALS = []
     chk = True
