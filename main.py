@@ -8,11 +8,11 @@ WIDTH, HEIGHT = 800, 600  # window size
 WIN = pygame.display.set_mode((WIDTH, HEIGHT))  # create the pygame window
 pygame.display.set_caption('Preditor-Prey Simulator')  # set the title
 MAIN_FONT = pygame.font.SysFont('comicsans', 20)  # set the font style and size
-FPS = 2  # set the frame per second limit
+FPS = 5  # set the frame per second limit
 # MAX_MOVES = 100
 # MAX_ISLAND_AGE = 150
-STARTING_PREY = 20
-STARTING_PRED = 5
+STARTING_PREY = 40
+STARTING_PRED = 15
 
 # Colours (R, G, B)
 BLACK = (0, 0, 0)
@@ -40,7 +40,7 @@ class Island:
         self.gap_h = self.height // self.rows
         self.pred_cnt = 0
         self.prey_cnt = 0
-        self.max_moves = 150
+        self.max_moves = 300
         # the below (self.grid) creates the "island" and sets each tile to 0
         # these will be set to correspond to grass, water, etc... by the 
         # create_landscape function
@@ -230,7 +230,7 @@ def get_chk(lst, x, y):
 
 def main(win, width, height, start_prey, start_pred):
     ''' main is called to start the program '''
-    ROWS = 20
+    ROWS = 40
     positions = []
     ANIMALS = []
     chk = True
